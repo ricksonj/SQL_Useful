@@ -1,0 +1,4 @@
+----EDIT VALUES----
+UPDATE Customers
+SET ContactName = 'Alfred Schmidt'
+WHERE CustomerID = 1;
