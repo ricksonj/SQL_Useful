@@ -1,0 +1,54 @@
+-----------------------------------------------
+------LAG------
+--LAG([ROW],1,0) OVER (order by customerref , interaction_date ) --allows me to return the offsetting row
+
+------Windowed Functions------
+--WITH Offline_Packs AS (
+--						--SELECT	CEB.Mcs_CustomerReference
+--						--		, SMB.Value AS Mcs_contactingonbehalf
+--						--		, CAST( IEB.mcs_DiagnosisCampaignOptInDate AS DATE) AS mcs_DiagnosisCampaignOptInDate
+--						--		, ROW_NUMBER() OVER ( PARTITION by ceb.Mcs_CustomerReference, YEAR(IEB.mcs_DiagnosisCampaignOptInDate) 
+--						--								ORDER BY IEB.mcs_DiagnosisCampaignOptInDate ) AS row_no
+--						--FROM  Macmillan_MSCRMRep.dbo.IncidentBase IB
+--						--	LEFT JOIN Macmillan_MSCRMRep.dbo.IncidentExtensionBase IEB ON IEB.IncidentId = IB.IncidentId
+--						--	LEFT JOIN Macmillan_MSCRMRep.dbo.StringMapBase SMB ON IEB.mcs_callingonbehalf = SMB.AttributeValue 
+--						--														AND SMB.ObjectTypeCode = 112 
+--						--														AND SMB.AttributeName = 'mcs_callingonbehalf'
+--						--	LEFT JOIN Macmillan_MSCRMRep.dbo.ContactExtensionBase  CEB ON IB.CustomerId = CEB.ContactId
+--						--WHERE  IEB.mcs_DiagnosisCampaignOptInDate IS NOT NULL 
+--						--	AND IEB.mcs_Reason_Campaign_PacksNotOffered IS NULL
+--					  )
+--SELECT Mcs_CustomerReference
+--		,mcs_DiagnosisCampaignOptInDate
+--		,Mcs_contactingonbehalf 
+--FROM Offline_Packs 
+--WHERE row_no = 1
+
+
+------Temp table setup------
+-- IF OBJECT_ID('tempdb..#Data') IS NOT NULL BEGIN DROP TABLE #Data END
+
+
+------Update Column Value------
+--UPDATE ReportingBaseDB.dbo.Calendar
+--SET Day_IsUKHols = 1
+--where date in ( '2022-9-19', '2023-05-08')
+
+------Add Column------
+--ALTER TABLE ReportingBaseDB.dbo.Calendar
+--ADD Day_IsUKNonStandardHols Int
+
+
+------Insert values into temp table------
+--CREATE TABLE #Hols (BHols DATE)
+--INSERT INTO #Hols
+--VALUES ('2023-12-26'),('2023-12-25'),
+
+------ ------ azure only
+--		STRING_AGG( I.fsdyn_name,'_') WITHIN GROUP (ORDER BY I.fsdyn_name ASC) AS RequestedItems
+
+
+--USE [EmissionsData]
+--SELECT COLUMN_NAME,* 
+--FROM INFORMATION_SCHEMA.COLUMNS
+--WHERE TABLE_NAME = 'RecyclingReportRawData' AND TABLE_SCHEMA='staging'
