@@ -1,0 +1,48 @@
+-------------------------------------------------Time Table for SSMS-------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------
+IF OBJECT_ID('tempdb..#Initial') IS NOT NULL BEGIN DROP TABLE #Initial END
+DECLARE @dt TIME(0), @dtEnd TIME(0)
+SET @dt = '00:00:00' ; SET @dtEnd = '23:59:59'
+;
+CREATE TABLE #Initial ([Time] TIME(0))
+WHILE @dt < @dtEnd BEGIN 
+	INSERT INTO #Initial VALUES(@dt)
+	SET @dt=dateadd(SECOND,1,@dt)
+END 
+	INSERT INTO #Initial VALUES(@dtEnd)
+;
+INSERT INTO ReportingBaseDB.dbo.Times
+SELECT TOP 100000 
+		  DATEDIFF(S,'00:00:00',[Time]) AS [TimeKey]
+		,[Time]
+	   ---
+	    ,DATEPART(HH,[Time]) AS [Hours]
+	    ,FORMAT([Time],'hh') AS [Hours_Label]
+	   ---
+	    ,DATEPART(MI,[Time]) AS [Minutes]
+	    ,FORMAT([Time],'mm') AS [Minutes_Label]
+	   ---
+		,DATEPART(s,[Time]) AS [Seconds]
+	    ,FORMAT([Time],'ss') AS [Seconds_Label]
+	   ---
+	    ,CASE WHEN DATEPART(HH,[Time])<13 THEN 'AM' ELSE 'PM' END AS [AM/PM]
+		,TIMEFROMPARTS( DATEPART(HH,[Time]), FLOOR(DATEPART(MI,[Time])/15.0)*15, '0',0,0) AS [15Minutes_IntervalStart]
+		,TIMEFROMPARTS( DATEPART(HH,[Time]), FLOOR(DATEPART(MI,[Time])/30.0)*30, '0',0,0) AS [30Minutes_IntervalStart]
+		,TIMEFROMPARTS( DATEPART(HH,[Time]), '0', '0',0,0) AS [1Hour_IntervalStart]
+		,TIMEFROMPARTS( (FLOOR(DATEPART(HH,[Time])/2)*2), '0', '0',0,0) AS [2Hour_IntervalStart]
+		,CASE WHEN [Time] BETWEEN '08:00:00' AND '19:59:59' THEN 1 ELSE 0 END AS [WorkingHours]
+FROM #Initial
+ORDER BY [Time]
+
+------
+--CREATE TABLE ReportingBaseDB.dbo.Times ( 
+--			[TimeKey] INT, [Time] Time(0), [Hours] INT, [Hours_Label] VARCHAR(2)
+--		   ,[Minutes] INT, [Minutes_Label] VARCHAR(2), [Seconds] INT, [Seconds_Label] VARCHAR(2)
+--		   ,[AM/PM] VARCHAR(2), [15Minutes_IntervalStart] Time(0), [30Minutes_IntervalStart] Time(0)
+--		   ,[1Hour_IntervalStart] Time(0) , [2Hour_IntervalStart] Time(0), [WorkingHours] INT
+--										)
+
+-- DROP TABLE ReportingBaseDB.dbo.Times
+-- SELECT * FROM ReportingBaseDB.dbo.Times
+
+----------------------------------------------------------------------------------------------------------------------------
