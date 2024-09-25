@@ -1,0 +1,137 @@
+---------------------Creation of a calendar table in SSMS------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+IF OBJECT_ID('tempdb..#Initial') IS NOT NULL BEGIN DROP TABLE #Initial END
+SET DATEFIRST 1 -- ( Monday )
+
+DECLARE @dt DATE, @dtEnd DATE
+SET @dt = '2015-01-01' ; SET @dtEnd = '2031-01-01'
+
+CREATE TABLE #Initial ([Date] DATE)
+WHILE @dt<@dtEnd BEGIN 
+	INSERT INTO #Initial VALUES(@dt)
+	SET @dt=dateadd(dd,1,@dt)
+END 
+-----------------------------------------------------------------------------------------------------
+
+IF OBJECT_ID('tempdb..#Hols') IS NOT NULL BEGIN DROP TABLE #Hols END
+CREATE TABLE #Hols (BHols DATE)
+INSERT INTO #Hols
+VALUES 
+('2030-12-26'),('2030-12-25'),('2030-08-26'),('2030-05-27'),('2030-05-06'),('2030-04-22'),('2030-04-19'),('2030-01-01')
+,('2029-12-26'),('2029-12-25'),('2029-08-27'),('2029-05-28'),('2029-05-07'),('2029-04-02'),('2029-03-30'),('2029-01-01')
+,('2028-12-26'),('2028-12-25'),('2028-08-28'),('2028-05-29'),('2028-05-01'),('2028-04-17'),('2028-04-14'),('2028-01-03')
+,('2027-12-28'),('2027-12-27'),('2027-08-30'),('2027-05-31'),('2027-05-03'),('2027-03-29'),('2027-03-26'),('2027-01-01')
+,('2026-12-28'),('2026-12-25'),('2026-08-31'),('2026-05-25'),('2026-05-04'),('2026-04-06'),('2026-04-03'),('2026-01-01')
+,('2025-12-26'),('2025-12-25'),('2025-08-25'),('2025-05-26'),('2025-05-05'),('2025-04-21'),('2025-04-18'),('2025-01-01')
+,('2024-12-26'),('2024-12-25'),('2024-08-26'),('2024-05-27'),('2024-05-06'),('2024-04-01'),('2024-03-29'),('2024-01-01')
+,('2023-12-26'),('2023-12-25'),('2023-08-28'),('2023-05-29'),('2023-05-01'),('2023-04-10'),('2023-04-07'),('2023-01-02')
+	  ,('2022-12-27'),('2022-12-26'),('2022-08-29'),('2022-06-03'),('2022-06-02'),('2022-05-02'),('2022-04-18'),('2022-04-15'),('2022-01-03')
+	  ,('2021-12-28'),('2021-12-27'),('2021-08-30'),('2021-05-31'),('2021-05-03'),('2021-04-05'),('2021-04-02'),('2021-01-01')
+	  ,('2020-12-28'),('2020-12-25'),('2020-08-31'),('2020-05-25'),('2020-05-08'),('2020-04-13'),('2020-04-10'),('2020-01-01')
+	  ,('2019-12-26'),('2019-12-25'),('2019-08-26'),('2019-05-27'),('2019-05-06'),('2019-04-22'),('2019-04-19'),('2019-01-01')
+	  ,('2018-12-26'),('2018-12-25'),('2018-08-27'),('2018-05-28'),('2018-05-07'),('2018-04-02'),('2018-03-30'),('2018-01-01')
+      ,('2017-12-26'),('2017-12-25'),('2017-08-28'),('2017-05-29'),('2017-05-01'),('2017-04-17'),('2017-04-14'),('2017-01-02')
+	  ,('2016-12-27'),('2016-12-26'),('2016-08-29'),('2016-05-30'),('2016-05-02'),('2016-03-28'),('2016-03-25'),('2016-01-01')
+	  ,('2015-12-28'),('2015-12-25'),('2015-08-31'),('2015-05-25'),('2015-05-04'),('2015-04-06'),('2015-04-03'),('2015-01-01')
+-----------------------------------------------------------------------------------------------------
+IF OBJECT_ID('tempdb..#Hols_Other') IS NOT NULL BEGIN DROP TABLE #Hols_Other END
+CREATE TABLE #Hols_Other (BHols_Other DATE, [Note] VARCHAR(MAX))
+INSERT INTO #Hols_Other
+VALUES 
+('2022-06-03','Platinum Jubilee BH'),('2022-09-19','Queen Elizabeth II State Funeral'),('2023-05-08','King Charles III Coronation')
+-----------------------------------------------------------------------------------------------------
+IF OBJECT_ID('tempdb..#MSLClosed') IS NOT NULL BEGIN DROP TABLE #MSLClosed END
+CREATE TABLE #MSLClosed (MSLClosures DATE)
+INSERT INTO #MSLClosed
+VALUES ('2020-03-28'),('2020-03-29'),('2020-04-04'),('2020-04-05'),('2020-04-11'),('2020-04-12')
+	  ,('2020-04-18'),('2020-04-19'),('2020-04-25'),('2020-04-26'),('2022-06-29')
+-----------------------------------------------------------------------------------------------------
+
+INSERT INTO ReportingBaseDB.dbo.Calendar
+SELECT TOP 100000 
+	  I.[Date]
+	, FORMAT([Date],'ddMMyy') AS [Date_DDMMYY]
+	, FORMAT([Date],'dd/MM') AS [Date_DD/MM]
+	, FORMAT([Date],'dd/MM/yy') AS [Date_DD/MM/YY]
+	, FORMAT([Date],'dddd') AS [Day_DescLong]
+	, FORMAT([Date],'ddd') AS [Day_DescShort]
+	, CASE WHEN FORMAT([Date],'ddd') IN ('Sat','Sun') THEN 0 ELSE 1 END AS [Day_IsWkday]
+	, CASE WHEN FORMAT([Date],'ddd') IN ('Sat','Sun') THEN 1 ELSE 0 END AS [Day_IsWkend]
+	, CASE WHEN H.BHols IS NOT NULL THEN 1 ELSE 0 END AS [Day_IsUKHols]
+	, CASE WHEN MSL.MSLClosures IS NOT NULL THEN 1 ELSE 0 END AS [Day_IsAllMSLClosed]
+	, DATEPART(DW,[Date]) AS [Day_OfWeek]
+	, CONVERT(INT,FORMAT([Date],'dd')) AS [Day_OfMonth]
+    , DATEDIFF(DAY,CAST(DATEADD(DAY, 0, DATEADD(QUARTER, DATEDIFF(QUARTER, 0, [Date]), 0)) AS DATE),[Date])+1 AS [Day_OfQuarter]
+	, DATEPART(DY,[Date]) AS [Day_OfYear]
+	, CASE WHEN [Date]>='2020-03-23' THEN DATEDIFF(DAY,'2020-03-23',[Date]) ELSE 0 END AS [Day_SinceLockdown]
+	-----------------------------------------------------------------------------------------
+	, DATEPART(ISOWK,[Date]) AS [Week_No]
+	--, CAST(FORMAT([Date],'yyy') AS varchar) + '-W' + CAST(DATEPART(ISOWK,[Date]) AS varchar) AS [Week_YYYY-WKWW]
+	--, (DATEPART(YYYY,[Date])*100)+DATEPART(ISOWK,[Date]) AS [Week_YYYYWW]
+
+--	, CASE WHEN DATEPART(ISO_WEEK, [Date]) > 50 AND MONTH([Date]) = 1 THEN YEAR([Date]) - 1
+--		   WHEN DATEPART(ISO_WEEK, [Date]) = 1 AND MONTH([Date]) = 12 THEN YEAR([Date]) + 1
+--           ELSE YEAR([Date]) END AS [TEST]
+--	, (CASE WHEN DATEPART(ISO_WEEK, [Date]) > 50 AND MONTH([Date]) = 1 THEN YEAR([Date]) - 1
+--		   WHEN DATEPART(ISO_WEEK, [Date]) = 1 AND MONTH([Date]) = 12 THEN YEAR([Date]) + 1
+--           ELSE YEAR([Date]) END) * 100 + DATEPART(ISOWK,[Date]) AS [TEST2]
+	, CONVERT(VARCHAR,(CASE WHEN DATEPART(ISO_WEEK, [Date]) > 50 AND MONTH([Date]) = 1 THEN YEAR([Date]) - 1
+		   WHEN DATEPART(ISO_WEEK, [Date]) = 1 AND MONTH([Date]) = 12 THEN YEAR([Date]) + 1
+           ELSE YEAR([Date]) END)) + '-W' + CONVERT(VARCHAR,DATEPART(ISOWK,[Date])) AS [Week_YYYY-WKWW]
+	, (CASE WHEN DATEPART(ISO_WEEK, [Date]) > 50 AND MONTH([Date]) = 1 THEN YEAR([Date]) - 1
+			   WHEN DATEPART(ISO_WEEK, [Date]) = 1 AND MONTH([Date]) = 12 THEN YEAR([Date]) + 1
+	           ELSE YEAR([Date]) END) * 100 + DATEPART(ISOWK,[Date]) AS [Week_YYYYWW]
+	, CASE WHEN [Date]>='2020-03-23' THEN DATEDIFF(WEEK,'2020-03-23',[Date]) ELSE 0 END AS [Week_SinceLockdown]
+	, DATEADD(DAY,- (DATEPART(DW,[Date])-1) ,[Date]) AS [Week_StartDate]
+	, DATEADD(DAY,7 - DATEPART(DW,[Date]),[Date]) AS [Week_EndDate]
+	-----------------------------------------------------------------------------------------
+	, DATEPART(M,[Date]) AS [Month_No]
+	, FORMAT([Date],'MMMM') AS [Month_DescLong]
+	, FORMAT([Date],'MMM') AS [Month_DescShort]
+	, FORMAT([Date],'MM/yyy') AS [Month_MM/YYYY]
+	, FORMAT([Date],'MMM-yy') AS [Month_MMM-YY]
+	, FORMAT([Date],'yy-MM') AS [Month_YY-MM]
+	, FORMAT([Date],'yyyMM') AS [Month_YYYYMM]
+	, FORMAT([Date],'yyyMMM') AS [Month_YYYYMMM]
+	, DATEADD(DAY,1,EOMONTH([Date],-1)) AS [Month_StartDate]
+	, EOMONTH([Date]) AS [Month_EndDate]
+	-----------------------------------------------------------------------------------------
+	, DATEPART( QUARTER,[Date]) AS [Quarter_No]
+	, CONCAT( 'Q',CONVERT( Varchar(2),DATEPART(QUARTER,[Date]))) AS [Quarter_QQ]
+	, CONCAT( 'Q',CONVERT( Varchar(2),DATEPART(QUARTER,[Date])),'-', YEAR([Date])) AS [Quarter_QQ-YYYY]
+	, CONCAT( 'Q',CONVERT( Varchar(2),DATEPART(QUARTER,[Date])), FORMAT([Date],'yy')) AS [Quarter_QQYY]
+	, CONCAT( FORMAT([Date],'yy'),'-Q',CONVERT(Varchar(2),DATEPART(QUARTER,[Date]) )) AS [Quarter_YY-QQ]
+	, CONCAT( YEAR([Date]),'Q',CONVERT(Varchar(2),DATEPART(QUARTER,[Date]) )) AS [Quarter_YYYYQQ]
+	, CAST( DATEADD( DAY, 0, DATEADD( QUARTER, DATEDIFF( QUARTER, 0, [Date]), 0)) AS DATE) AS [Quarter_StartDate]
+	, EOMONTH( DATEFROMPARTS( YEAR([Date]), DATEPART( QUARTER, [Date]) * 3, 1)) AS [Quarter_EndDate]
+	-----------------------------------------------------------------------------------------			
+	, DATEPART( YEAR,[Date]) AS [Year]
+	, FORMAT( [Date],'yy') AS [Year_Short]
+	, DATEFROMPARTS( YEAR([Date]),1,1) AS [Year_StartDate]
+	, DATEFROMPARTS( YEAR([Date]),12,31) AS [Year_EndDate]
+	, CASE WHEN H2.BHols_Other IS NOT NULL THEN 1 ELSE 0 END AS [Day_IsUKNonStandardHols]
+	, CASE WHEN H2.Note IS NOT NULL THEN H2.Note ELSE NULL END AS [Note]
+FROM #Initial I
+	LEFT JOIN #Hols H ON I.Date=H.BHols
+	LEFT JOIN #Hols_Other H2 ON I.Date = H2.BHols_Other
+	LEFT JOIN #MSLClosed MSL ON I.Date=MSL.MSLClosures
+ORDER BY [Date] DESC
+-----------------------------------------------------------------------------------------------------
+
+--CREATE TABLE ReportingBaseDB.dbo.Calendar (
+--				[Date] DATE, [Date_DDMMYY] VARCHAR(8), [Date_DD/MM] VARCHAR(5), [Date_DD/MM/YY] VARCHAR(8)
+--			   ,[Day_DescLong] VARCHAR(9), [Day_DescShort] VARCHAR(3), [Day_IsWkday] INT, [Day_IsWkend] INT
+--			   ,[Day_IsUKHols] INT,[Day_IsAllMSLClosed] INT, [Day_OfWeek] INT, [Day_OfMonth] INT, [Day_OfQuarter] INT, [Day_OfYear] INT, [Day_SinceLockdown] INT
+--			   ,[Week_No] INT, [Week_YYYY-WKWW] VARCHAR(8), [Week_YYYYWW] INT, [Week_SinceLockdown] INT, [Week_StartDate] DATE, [Week_EndDate] DATE
+--			   ,[Month_No] INT, [Month_DescLong] VARCHAR(12), [Month_DescShort] VARCHAR(3), [Month_MM/YYYY] VARCHAR(7), [Month_MMM-YY] VARCHAR(6)
+--			   ,[Month_YY-MM] VARCHAR(5), [Month_YYYYMM] VARCHAR(12),[Month_YYYYMMM] VARCHAR(16), [Month_StartDate] DATE, [Month_EndDate] DATE, [Quarter_No] INT
+--			   ,[Quarter_QQ] VARCHAR(2), [Quarter_QQ-YYYY] VARCHAR(7), [Quarter_QQYY] VARCHAR(4), [Quarter_YY-QQ] VARCHAR(5)
+--			   ,[Quarter_YYYYQQ] VARCHAR(6), [Quarter_StartDate] DATE, [Quarter_EndDate] DATE, [Year] INT
+--			   ,[Year_Short] INT, [Year_StartDate] DATE, [Year_EndDate] DATE
+--					)
+-----------------------------------------------------------------------------------------------------
+--TRUNCATE TABLE ReportingBaseDB.dbo.Calendar
+--DROP TABLE ReportingBaseDB.dbo.Calendar
+
+--SELECT * FROM ReportingBaseDB.dbo.Calendar
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
